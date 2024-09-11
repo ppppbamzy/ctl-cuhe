@@ -100,90 +100,91 @@ int main(void)
             lwe_temp.cipher[i] = lwe.cipher[i];
 
         // Bootstrapping by GB_CUDA lib
-        {
-            MSecTimer timer(&timer_, "gb_cuda.Bootstrap:");
-            gb_cuda.Bootstrap((LWE_gb *)&lwe, (vector<LWE_gb> *)&res, 0);
-            timer.stop();
-        }
+        // {
+        //     MSecTimer timer(&timer_, "gb_cuda.Bootstrap:");
+        //     gb_cuda.Bootstrap((LWE_gb *)&lwe, (vector<LWE_gb> *)&res, 0);
+        //     timer.stop();
+        // }
+        
         // Bootstrapping by glwe cpu implementation
-        // {
-        //     MSecTimer timer(&timer_, "glwe_cpu.Bootstrap:");
-        //     tfhecryptor.GateBootstrappingLWE2LWENTTwithoutTestVec(res_temp, lwe_temp, bsk);
-        //     timer.stop();
-        // }
-
-        // // verify the results
-        // gb_cuda.verify_lwe(*(vector<LWE_gb> *)&res, *(vector<LWE_gb> *)&res_temp, context_d, 2);
-
-        // cout << "Correct result: " << pt << endl;
-    }
-
-    // test bootstrapping for MANY LWE
-    printf("test bootstrapping for MANY LWE!\n");
-    {
-        // init GB_CUDA lib
-        // select needed gpus
-        uint32_t gpu_arr[] = {2, 0, 3, 1};
-        vector<uint32_t> gpu_id(begin(gpu_arr), end(gpu_arr));
-        GB_CUDA gb_cuda(
-            context_d,
-            8192,            // number of LWEs to be packed
-            domainP::n_,     // lwe.n
-            targetP::digits, // digits
-            targetP::Bgbit,  // Bgbit
-            1,               // BKU_m
-            1,               // MLWE_k,
-            targetP::l_,     // Lgsw
-            16,              // number of bootstrappings that run simultaneously
-            gpu_id           // enabled gpus
-        );
-
-        // need to tell GB_CUDA lib the init state of testvector
-        RLWECipher init_testvec(tfhecryptor.get_context());
-        init_testvec.resize(tfhecryptor.get_context(), targetP::k_ + 1);
-        tfhecryptor.encrypt_testvec(init_testvec);
-
-        // init bootstrapping
-        gb_cuda.Init_Bootstrapping(init_testvec, bsk);
-
-        // create many LWEs
-        int num_lwes = 1024;
-        double timer_{0.};
-        vector<vector<LWE>> res_1;
-        vector<LWE> res_2;
-        vector<LWE> lwe_1(num_lwes);
-
-        for (size_t ii = 0; ii < num_lwes; ii++) {
-            lwe_1[ii].n = domainP::n_;
-            lwe_1[ii].modulus = RAND_MAX;
-            lwe_1[ii].cipher.resize(domainP::n_ + 1);
-            int pt = rand() % 2;
-            lwe_1[ii].cipher[domainP::n_] = (rand() & 16383) + (RAND_MAX / 4 * 3) * pt;
-            for (size_t i = 0; i < domainP::n_; i++) {
-                lwe_1[ii].cipher[i] = rand() % RAND_MAX;
-                lwe_1[ii].cipher[domainP::n_] += lwe_1[ii].cipher[i] * secret_key_d_intt.data()[i];
-                if (lwe_1[ii].cipher[domainP::n_] > RAND_MAX) lwe_1[ii].cipher[domainP::n_] -= RAND_MAX;
-            }
-        }
-
-        // Bootstrapping by GB_CUDA lib
         {
-            MSecTimer timer(&timer_, "gb_cuda.Bootstrap:");
-            gb_cuda.Bootstrap_batch(*(vector<vector<LWE_gb>> *)&res_1, *(vector<LWE_gb> *)&lwe_1);
+            MSecTimer timer(&timer_, "glwe_cpu.Bootstrap:");
+            tfhecryptor.GateBootstrappingLWE2LWENTTwithoutTestVec(res_temp, lwe_temp, bsk);
             timer.stop();
         }
-        // randomly select an LWE, do Bootstrapping by glwe cpu implementation
-        // uint32_t rand_idx = rand() % num_lwes;
-        // {
-        //     MSecTimer timer(&timer_, "glwe_cpu.Bootstrap:");
-        //     tfhecryptor.GateBootstrappingLWE2LWENTTwithoutTestVec(res_2, lwe_1[rand_idx], bsk);
-        //     timer.stop();
-        // }
 
-        // // verify the results
-        // gb_cuda.verify_lwe(*(vector<LWE_gb> *)&res_1[rand_idx], *(vector<LWE_gb> *)&res_2, context_d, 2);
+        // verify the results
+        gb_cuda.verify_lwe(*(vector<LWE_gb> *)&res, *(vector<LWE_gb> *)&res_temp, context_d, 2);
 
-        // cout << "Correct result: " << pt << endl;
+        cout << "Correct result: " << pt << endl;
     }
+
+    // // test bootstrapping for MANY LWE
+    // printf("test bootstrapping for MANY LWE!\n");
+    // {
+    //     // init GB_CUDA lib
+    //     // select needed gpus
+    //     uint32_t gpu_arr[] = {2, 0, 3, 1};
+    //     vector<uint32_t> gpu_id(begin(gpu_arr), end(gpu_arr));
+    //     GB_CUDA gb_cuda(
+    //         context_d,
+    //         8192,            // number of LWEs to be packed
+    //         domainP::n_,     // lwe.n
+    //         targetP::digits, // digits
+    //         targetP::Bgbit,  // Bgbit
+    //         1,               // BKU_m
+    //         1,               // MLWE_k,
+    //         targetP::l_,     // Lgsw
+    //         16,              // number of bootstrappings that run simultaneously
+    //         gpu_id           // enabled gpus
+    //     );
+
+    //     // need to tell GB_CUDA lib the init state of testvector
+    //     RLWECipher init_testvec(tfhecryptor.get_context());
+    //     init_testvec.resize(tfhecryptor.get_context(), targetP::k_ + 1);
+    //     tfhecryptor.encrypt_testvec(init_testvec);
+
+    //     // init bootstrapping
+    //     gb_cuda.Init_Bootstrapping(init_testvec, bsk);
+
+    //     // create many LWEs
+    //     int num_lwes = 1024;
+    //     double timer_{0.};
+    //     vector<vector<LWE>> res_1;
+    //     vector<LWE> res_2;
+    //     vector<LWE> lwe_1(num_lwes);
+
+    //     for (size_t ii = 0; ii < num_lwes; ii++) {
+    //         lwe_1[ii].n = domainP::n_;
+    //         lwe_1[ii].modulus = RAND_MAX;
+    //         lwe_1[ii].cipher.resize(domainP::n_ + 1);
+    //         int pt = rand() % 2;
+    //         lwe_1[ii].cipher[domainP::n_] = (rand() & 16383) + (RAND_MAX / 4 * 3) * pt;
+    //         for (size_t i = 0; i < domainP::n_; i++) {
+    //             lwe_1[ii].cipher[i] = rand() % RAND_MAX;
+    //             lwe_1[ii].cipher[domainP::n_] += lwe_1[ii].cipher[i] * secret_key_d_intt.data()[i];
+    //             if (lwe_1[ii].cipher[domainP::n_] > RAND_MAX) lwe_1[ii].cipher[domainP::n_] -= RAND_MAX;
+    //         }
+    //     }
+
+    //     // Bootstrapping by GB_CUDA lib
+    //     {
+    //         MSecTimer timer(&timer_, "gb_cuda.Bootstrap:");
+    //         gb_cuda.Bootstrap_batch(*(vector<vector<LWE_gb>> *)&res_1, *(vector<LWE_gb> *)&lwe_1);
+    //         timer.stop();
+    //     }
+    //     // randomly select an LWE, do Bootstrapping by glwe cpu implementation
+    //     // uint32_t rand_idx = rand() % num_lwes;
+    //     // {
+    //     //     MSecTimer timer(&timer_, "glwe_cpu.Bootstrap:");
+    //     //     tfhecryptor.GateBootstrappingLWE2LWENTTwithoutTestVec(res_2, lwe_1[rand_idx], bsk);
+    //     //     timer.stop();
+    //     // }
+
+    //     // // verify the results
+    //     // gb_cuda.verify_lwe(*(vector<LWE_gb> *)&res_1[rand_idx], *(vector<LWE_gb> *)&res_2, context_d, 2);
+
+    //     // cout << "Correct result: " << pt << endl;
+    // }
     return 0;
 }

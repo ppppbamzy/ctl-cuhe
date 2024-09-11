@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.25)
+set(CMAKE_CUDA_ARCHITECTURES native)
+set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 project(DB LANGUAGES CXX CUDA)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 set(CMAKE_CXX_STANDARD 14)
@@ -20,11 +22,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 SET(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
 SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 
-# Try to find and load settings from an external package (SEAL).
-find_package(SEAL REQUIRED)
+include(FetchContent)
 
-# GB_CUDA
-add_subdirectory(include/gb_cuda/)
+set(seal_patch_command git apply ${CMAKE_CURRENT_SOURCE_DIR}/seal.patch)
+set(SEAL_THROW_ON_TRANSPARENT_CIPHERTEXT OFF CACHE BOOL "Allow transparent ctxt" FORCE)
+FetchContent_Declare(SEAL
+                     GIT_REPOSITORY https://github.com/microsoft/SEAL.git
+                     GIT_TAG        v4.0.0
+                     PATCH_COMMAND ${seal_patch_command}
+)
+FetchContent_MakeAvailable(SEAL)
 
 # TFHE
 add_library(glwe OBJECT)
