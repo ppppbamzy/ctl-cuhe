@@ -1,52 +1,26 @@
-diff --git a/native/src/seal/util/polyarithsmallmod.cpp b/native/src/seal/util/polyarithsmallmod.cpp
-index e3f0afca..c96f6229 100644
---- a/native/src/seal/util/polyarithsmallmod.cpp
-+++ b/native/src/seal/util/polyarithsmallmod.cpp
-@@ -328,10 +328,10 @@ namespace seal
-             {
-                 throw invalid_argument("result");
+diff --git a/native/src/seal/util/polyarithsmallmod.h b/native/src/seal/util/polyarithsmallmod.h
+index d0fef603..211ae629 100644
+--- a/native/src/seal/util/polyarithsmallmod.h
++++ b/native/src/seal/util/polyarithsmallmod.h
+@@ -739,10 +739,21 @@ namespace seal
              }
--            if (poly == result)
--            {
--                throw invalid_argument("result cannot point to the same value as poly");
--            }
-+            // if (poly == result)
-+            // {
-+            //     throw invalid_argument("result cannot point to the same value as poly");
-+            // }
-             if (modulus.is_zero())
-             {
-                 throw invalid_argument("modulus");
-@@ -340,7 +340,7 @@ namespace seal
-             {
-                 throw invalid_argument("coeff_count");
-             }
--            if (shift >= coeff_count)
-+            if (shift >= 2 * coeff_count)
-             {
-                 throw invalid_argument("shift");
-             }
-@@ -352,6 +352,12 @@ namespace seal
-                 return;
-             }
- 
+ #endif
+             auto poly_modulus_degree = result.poly_modulus_degree();
++            if (mono_exponent > 2 * poly_modulus_degree) {
++                mono_exponent %= 2 * poly_modulus_degree;
++            }
 +            bool neg = false;
-+            if (shift >= coeff_count) {
-+                shift -= coeff_count;
++            if (mono_exponent > poly_modulus_degree) {
++                mono_exponent -= poly_modulus_degree;
 +                neg = true;
 +            }
-+
-             uint64_t index_raw = shift;
-             uint64_t coeff_count_mod_mask = static_cast<uint64_t>(coeff_count) - 1;
-             for (size_t i = 0; i < coeff_count; i++, poly++, index_raw++)
-@@ -366,6 +372,10 @@ namespace seal
-                     result[index] = modulus.value() - *poly;
-                 }
-             }
-+
+             SEAL_ITERATE(iter(poly, mono_coeff, modulus, result), coeff_modulus_size, [&](auto I) {
+                 negacyclic_multiply_poly_mono_coeffmod(
+                     get<0>(I), poly_modulus_degree, get<1>(I), mono_exponent, get<2>(I), get<3>(I), pool);
+             });
 +            if (neg) {
-+                negate_poly_coeffmod(result, coeff_count, modulus, result);
++                negate_poly_coeffmod(result, coeff_modulus_size, modulus, result);
 +            }
          }
-     } // namespace util
- } // namespace seal
+ 
+         inline void negacyclic_multiply_poly_mono_coeffmod(

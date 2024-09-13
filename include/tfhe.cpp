@@ -254,10 +254,13 @@ void TFHECryptor::CMUXNTTwithPolynomialMulByXaiMinusOne(RLWECipher &acc, RGSWCip
 void TFHECryptor::PolynomialMulByXai(RLWECipher &dst, RLWECipher &src, const uint64_t a)
 {
     auto &coeff_modulus = parms->coeff_modulus();
+    uint64_t one_rns[coeff_modulus.size()];
+    for (auto &comp: one_rns) { comp = 1; }
     for (size_t k = 0; k < 2; k++) {
         util::ConstRNSIter src_iter(src.data(k), poly_modulus_degree);
         util::RNSIter dst_iter(dst.data(k), poly_modulus_degree);
-        util::negacyclic_shift_poly_coeffmod(src_iter, coeff_modulus.size(), a, coeff_modulus, dst_iter);
+        util::negacyclic_multiply_poly_mono_coeffmod(
+            src_iter, coeff_modulus.size(), one_rns, a, coeff_modulus.data(), dst_iter, MemoryManager::GetPool());
     }
 }
 /*void TFHECryptor::PolynomialMulByXai_internal(util::RNSIter dst_iter0, util::RNSIter dst_iter1, util::RNSIter src_iter0, util::RNSIter src_iter1, const uint64_t a)
@@ -276,12 +279,15 @@ void TFHECryptor::PolynomialMulByXai(RLWECipher &dst, RLWECipher &src, const uin
 void TFHECryptor::PolynomialMulByXaiMinusOne(RLWECipher &dst, RLWECipher &src, const uint64_t a)
 {
     auto &coeff_modulus = parms->coeff_modulus();
+    uint64_t one_rns[coeff_modulus.size()];
+    for (auto &comp: one_rns) { comp = 1; }
     // INTT(dst);
     for (size_t k = 0; k < 2; k++) {
         util::ConstRNSIter src_iter(src.data(k), poly_modulus_degree);
         util::RNSIter dst_iter(dst.data(k), poly_modulus_degree);
-        util::negacyclic_shift_poly_coeffmod(src_iter, coeff_modulus_size, a, coeff_modulus, dst_iter);
-        util::sub_poly_coeffmod(dst_iter, src_iter, coeff_modulus_size, coeff_modulus, dst_iter);
+        util::negacyclic_multiply_poly_mono_coeffmod(
+            src_iter, coeff_modulus.size(), one_rns, a, coeff_modulus, dst_iter, MemoryManager::GetPool());
+        util::sub_poly_coeffmod(dst_iter, src_iter, coeff_modulus.size(), coeff_modulus, dst_iter);
     }
 }
 /*void TFHECryptor::PolynomialMulByXaiMinusOne_internal(util::RNSIter dst_iter0, util::RNSIter dst_iter1, util::RNSIter src_iter0, util::RNSIter src_iter1, const uint64_t a)
@@ -328,8 +334,14 @@ void TFHECryptor::BlindRotate_internal(RLWECipher &res, const LWE &lwe, BSK &bsk
      @param[in] testvector
      @param[out] testvector
     */
+
+    uint64_t one_rns[coeff_modulus_size];
+    for (auto &comp: one_rns) { comp = 1; }
     for (size_t k = 0; k < 2; k++)
-        util::negacyclic_shift_poly_coeffmod(testvector_iter[k], coeff_modulus_size, 2 * poly_modulus_degree - lwe.cipher[lwe.n], coeff_modulus, testvector_iter[k]);
+        util::negacyclic_multiply_poly_mono_coeffmod(
+            testvector_iter[k], coeff_modulus_size, one_rns, 
+            2 * poly_modulus_degree - lwe.cipher[lwe.n], coeff_modulus, testvector_iter[k], 
+            MemoryManager::GetPool());
 
     /*
      for loop of CMUXNTTwithPolynomialMulByXaiMinusOne
@@ -350,8 +362,12 @@ void TFHECryptor::BlindRotate_internal(RLWECipher &res, const LWE &lwe, BSK &bsk
         */
 
         // PolynomialMulByXaiMinusOne
+        uint64_t one_rns[coeff_modulus_size];
+        for (auto &comp: one_rns) { comp = 1; }
         for (size_t k = 0; k < 2; k++) {
-            util::negacyclic_shift_poly_coeffmod(testvector_iter[k], coeff_modulus_size, lwe.cipher[i], coeff_modulus, rotated_vector_iter[k]);
+            util::negacyclic_multiply_poly_mono_coeffmod(
+                testvector_iter[k], coeff_modulus_size, one_rns, lwe.cipher[i], coeff_modulus, rotated_vector_iter[k], 
+                MemoryManager::GetPool());
             util::sub_poly_coeffmod(rotated_vector_iter[k], testvector_iter[k], coeff_modulus_size, coeff_modulus, rotated_vector_iter[k]);
         }
         // util::rotate_minus_one_lazy(testvector_iter[k], coeff_modulus_size, lwe.cipher[i], coeff_modulus, rotated_vector_iter[k]);
@@ -418,8 +434,12 @@ void TFHECryptor::BlindRotate_internal_withBKU(RLWECipher &res, const LWE &lwe, 
      @param[in] testvector
      @param[out] testvector
     */
+    uint64_t one_rns[coeff_modulus_size];
+    for (auto &comp: one_rns) { comp = 1; }
     for (size_t k = 0; k < 2; k++)
-        util::negacyclic_shift_poly_coeffmod(testvector_iter[k], coeff_modulus_size, 2 * poly_modulus_degree - lwe.cipher[lwe.n], coeff_modulus, testvector_iter[k]);
+        util::negacyclic_multiply_poly_mono_coeffmod(
+            testvector_iter[k], coeff_modulus_size, one_rns, 2 * poly_modulus_degree - lwe.cipher[lwe.n], 
+            coeff_modulus, testvector_iter[k], MemoryManager::GetPool());
 
     /*
      for loop of CMUXNTTwithPolynomialMulByXaiMinusOne

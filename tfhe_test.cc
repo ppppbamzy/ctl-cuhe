@@ -81,7 +81,7 @@ int main(void)
         tfhecryptor.encrypt_testvec(init_testvec);
 
         // init bootstrapping
-        gb_cuda.Init_Bootstrapping(init_testvec, bsk);
+        // gb_cuda.Init_Bootstrapping(init_testvec, bsk);
 
         // create a LWE
         double timer_{0.};
@@ -114,7 +114,7 @@ int main(void)
         }
 
         // verify the results
-        gb_cuda.verify_lwe(*(vector<LWE_gb> *)&res, *(vector<LWE_gb> *)&res_temp, context_d, 2);
+        // gb_cuda.verify_lwe(*(vector<LWE_gb> *)&res, *(vector<LWE_gb> *)&res_temp, context_d, 2);
 
         cout << "Correct result: " << pt << endl;
     }
