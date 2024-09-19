@@ -11,8 +11,10 @@ struct LWE {
     {
         n = m;
         modulus = mod;
-        cipher.reserve(n + 1);
+        cipher.resize(n + 1);
     }
+    LWE(const LWE &that) = default;
+    LWE &operator=(const LWE &that) = default;
     size_t n{0};
     uint64_t modulus{0};
     std::vector<uint64_t> cipher;

@@ -4,6 +4,8 @@
 #include <array>
 #include <cstdlib>
 #include <sys/resource.h>
+#include <fstream>
+#include <iostream>
 
 // header file of GB_CUDA lib
 #include "gb_cuda/gb_cuda.h"
@@ -48,12 +50,30 @@ int main(void)
     for (size_t i = 0; i < RGSW_size; i++) {
         cout << i << ":\t" << tfhecryptor.NoiseBudget(rgsw[i]) << endl;
     }
+
     BSK bsk;
-    double genbsk_{0.};
-    MSecTimer genbsk(&genbsk_, "Generate BSK");
-    tfhecryptor.GenBSK(secret_key_d_intt, bsk);
-    genbsk.stop();
-    srand(0);
+    string sk_bsk_file_name("sk_and_bsk_file");
+    {
+        ifstream sk_bsk_file(sk_bsk_file_name, ios::binary);
+        if (not sk_bsk_file.good()) {
+            double genbsk_{0.};
+            MSecTimer genbsk(&genbsk_, "Generate BSK");
+            tfhecryptor.GenBSK(secret_key_d_intt, bsk);
+            genbsk.stop();
+            srand(0);
+
+            tfhecryptor.save(secret_key_d_intt, bsk, sk_bsk_file_name);
+        }
+    }
+    tfhecryptor.load(secret_key_d_intt, bsk, sk_bsk_file_name);
+    {
+        secret_key_d = secret_key_d_intt;
+        util::RNSIter secret_key_it(secret_key_d.data().data(), poly_modulus_degree_d);
+        auto ntt_tables = context_d.key_context_data()->small_ntt_tables();
+        util::ntt_negacyclic_harvey(secret_key_it, 
+            context_d.key_context_data()->parms().coeff_modulus().size(), ntt_tables);
+    }
+
 
     // test bootstrapping for one LWE
     printf("test bootstrapping for one LWE!\n");
@@ -96,8 +116,7 @@ int main(void)
         }
 
         // duplicate LWE
-        for (size_t i = 0; i < domainP::n_ + 1; i++)
-            lwe_temp.cipher[i] = lwe.cipher[i];
+        lwe_temp = lwe;
 
         // Bootstrapping by GB_CUDA lib
         // {

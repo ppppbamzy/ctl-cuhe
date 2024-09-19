@@ -50,7 +50,8 @@ void KeyGeneratorM::generate_sk(bool is_initialized)
             cout << secret_key_.data().data()[i] << "\t";
         cout << endl;*/
         // Set the parms_id for secret key
-        secret_key_.parms_id() = context_data.parms_id();
+        secret_key_.parms_id() = context_.key_parms_id();
+        secret_key_not_ntt.parms_id() = context_.key_parms_id();
 
 }
 

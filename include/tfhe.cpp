@@ -2,6 +2,9 @@
 #include "omp.h"
 #include "seal.inc"
 #include "timer.h"
+#include <fstream>
+#include <sstream>
+
 using namespace std;
 namespace seal
 {
@@ -154,12 +157,14 @@ int TFHECryptor::NoiseBudget(RLWECipher &cipher)
 }
 void TFHECryptor::GenBSK(SecretKey &sk, BSK &bsk)
 {
-    if (sk.data().is_ntt_form()) {
-        cout << "SK is in NTT form!" << endl;
-        exit(0);
+    for (Plaintext::pt_coeff_type coeff : sk.data().dyn_array()) {
+        if (coeff != 0 && coeff != 1) {
+            cout << "SK is in NTT form!" << endl;
+            exit(-1);
+        }
     }
     size_t keysize = domainP::ksize_;
-    bsk.reserve(keysize);
+    bsk.resize(keysize);
     for (size_t i = 0; i < domainP::n_ / domainP::m_; i++) {
         for (size_t j = 0; j < (1 << domainP::m_) - 1; j++) {
             RGSWCipher rgsw;
@@ -180,6 +185,39 @@ void TFHECryptor::GenBSK(SecretKey &sk, BSK &bsk)
         bsk.emplace_back(move(rgsw));
     }
 }
+void TFHECryptor::save(const SecretKey &sk, const BSK &bsk, const string &file_name)
+{
+    stringstream stream;
+    sk.save(stream);
+    for (const auto &key: bsk) {
+        for (const auto &ctxt: key) {
+            ctxt.save(stream);
+        }
+    }
+    ofstream file;
+    file.open(file_name);
+    file << stream.rdbuf();
+    file.close();
+}
+void TFHECryptor::load(SecretKey &sk, BSK &bsk, const string &file_name)
+{
+    ifstream file;
+    file.open(file_name);
+    stringstream stream;
+    file >> stream.rdbuf();
+
+    sk.load(*context_, stream);
+    bsk.resize(domainP::ksize_);
+    for (auto &rgsw: bsk) {
+        rgsw.resize(2 * targetP::l_);
+        for (auto &rlwe: rgsw) {
+            rlwe.load(*context_, stream);
+        }
+    }
+
+    file.close();
+}
+
 void TFHECryptor::ConvertBSKtoBKU(BSK &dst, BSK &src, const LWE &scaled_lwe)
 {
     size_t keysize = domainP::bkusize_;

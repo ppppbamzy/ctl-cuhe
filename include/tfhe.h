@@ -54,6 +54,8 @@ class TFHECryptor
     vector<vector<LWE>> bootstrap(vector<LWE> lwe_in, SecretKey lwe_sk);
     void GenBSK(SecretKey &sk, BSK &bsk);
     void ConvertBSKtoBKU(BSK &dst, BSK &src, const LWE &scaled_lwe);
+    void save(const SecretKey &sk, const BSK &bsk, const std::string &file_name);
+    void load(SecretKey &sk, BSK &bsk, const std::string &file_name);
     void CMUXNTTwithPolynomialMulByXaiMinusOne(RLWECipher &acc, RGSWCipher &cs, const uint64_t a);
     void CMUXNTTwithPolynomialMulByXaiMinusOne_internal(util::RNSIter res_iter0, util::RNSIter res_iter1, util::RNSIter decntt_iter, util::RNSIter prod_iter0, util::RNSIter prod_iter1, util::RNSIter acc_iter0, util::RNSIter acc_iter1, util::RNSIter sft_iter0, util::RNSIter sft_iter1, RLWECipher &sft, RGSWCipher &cs, const uint64_t a);
     void PolynomialMulByXai(RLWECipher &dst, RLWECipher &src, const uint64_t a);
